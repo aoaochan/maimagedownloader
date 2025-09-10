@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>이미지 다운로드</title>
+    <style>
+      :root {
+        --bg: #ffffff;
+        --text: #0f172a;
+        --muted: #64748b;
+        --border: #e2e8f0;
+        --panel: #f8fafc;
+        --primary: #2563eb;
+        --primary-600: #1d4ed8;
+        --primary-100a: rgba(37,99,235,0.12);
+      }
+      html, body { min-width: 760px; background: var(--bg); color: var(--text); }
+      body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; }
+      header { position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--border); padding: 12px 16px; }
+      h1 { font-size: 16px; margin: 0; }
+      main { padding: 14px 16px 16px; }
+      .row { margin-bottom: 12px; }
+      label { display: block; font-size: 13px; margin-bottom: 6px; }
+      input[type="text"] { width: 100%; padding: 9px 10px; font-size: 13px; box-sizing: border-box; border: 1px solid var(--border); border-radius: 8px; background: var(--bg); color: var(--text); }
+      input[type="text"]:focus { outline: 2px solid var(--primary-100a); border-color: var(--primary); }
+      .muted { color: var(--muted); font-size: 12px; }
+
+      .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+      .btn { appearance: none; border: 1px solid var(--border); background: var(--panel); color: var(--text); padding: 8px 12px; font-size: 12px; line-height: 1; border-radius: 8px; cursor: pointer; }
+      .btn:hover { background: #eef2f7; }
+      .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+      .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+      .btn-primary:hover { background: var(--primary-600); border-color: var(--primary-600); }
+      .btn-ghost { background: transparent; }
+
+      .counter { color: var(--muted); font-size: 12px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 999px; }
+      .status { margin-top: 10px; font-size: 12px; }
+
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; max-height: 520px; overflow: auto; border: 1px solid var(--border); padding: 12px; border-radius: 10px; background: var(--panel); }
+      .item { position: relative; border: 2px solid var(--border); border-radius: 10px; background: #fff; cursor: pointer; user-select: none; transition: box-shadow .12s ease, border-color .12s ease, transform .04s ease; }
+      .item:hover { transform: translateY(-1px); }
+      .item img { width: 100%; height: 120px; object-fit: cover; display: block; border-radius: 8px; }
+      .item.selected { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-100a) inset; }
+      .item .mark { position: absolute; top: 8px; left: 8px; background: var(--primary); color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 999px; display: none; }
+      .item.selected .mark { display: inline-block; }
+      .badge { position: absolute; right: 8px; bottom: 8px; background: rgba(0,0,0,0.6); color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 999px; }
+
+      @media (max-width: 760px) {
+        html, body { min-width: 360px; }
+        .grid { max-height: 420px; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
+        .item img { height: 95px; }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>이미지 일괄 다운로드</h1>
+    </header>
+    <main>
+    <div class="row">
+      <label for="basename">파일 이름 접두사</label>
+      <input id="basename" type="text" placeholder="파일" />
+      <div class="muted">예: 파일-1, 파일-2 ...</div>
+    </div>
+    <div class="row">
+      <label>저장 위치</label>
+      <div>
+        <label style="display:inline-flex;align-items:center;gap:6px;margin-right:12px;">
+          <input type="radio" name="saveWhere" id="saveDirect" checked />
+          다운로드 폴더에 직접 저장
+        </label>
+        <label style="display:inline-flex;align-items:center;gap:6px;">
+          <input type="radio" name="saveWhere" id="saveInFolder" />
+          하위 폴더에 저장:
+          <input id="folderName" type="text" placeholder="폴더명" style="width:180px;" disabled />
+        </label>
+      </div>
+      <div class="muted">폴더 지정 시 경로는 `다운로드/폴더명/파일-N.ext` 형태로 저장됩니다.</div>
+    </div>
+    <div class="row">
+      <label>폴더 프리셋</label>
+      <div class="actions" style="gap:6px;">
+        <select id="folderPreset" style="min-width:220px; padding:8px; border:1px solid var(--border); border-radius:8px; background: var(--bg); color: var(--text);">
+          <option value="">(선택된 프리셋 없음)</option>
+        </select>
+        <button id="addFolderBtn" class="btn">현재 폴더명 추가</button>
+        <button id="deleteFolderBtn" class="btn">선택 프리셋 삭제</button>
+      </div>
+      <div class="muted">프리셋은 확장 저장소에 보관됩니다. 실제 폴더 생성/삭제는 다운로드 시 발생합니다.</div>
+    </div>
+    <div class="row actions">
+      <button id="downloadSelectedBtn" class="btn btn-primary" disabled>선택한 이미지 다운로드</button>
+    </div>
+    <div class="row actions">
+      <button id="selectAllBtn" class="btn btn-ghost" disabled>전체 선택</button>
+      <button id="selectNoneBtn" class="btn btn-ghost" disabled>전체 해제</button>
+      <span id="counts" class="counter"></span>
+    </div>
+    <div id="grid" class="grid" aria-live="polite"></div>
+    <div id="status" class="status"></div>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+  </html>

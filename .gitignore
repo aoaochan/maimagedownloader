@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# archives / zips
+*.zip
+*.tar
+*.tgz
+
+# node_modules (not used here, but safe)
+node_modules/
