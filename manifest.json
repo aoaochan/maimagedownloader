@@ -5,8 +5,7 @@
   "description": "페이지의 모든 이미지를 순서대로 번호를 붙여 다운로드합니다.",
   "permissions": ["downloads", "activeTab", "storage", "scripting"],
   "action": {
-    "default_title": "이미지 다운로드",
-    "default_popup": "popup.html"
+    "default_title": "이미지 다운로드"
   },
   "background": {
     "service_worker": "background.js",

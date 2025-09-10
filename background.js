@@ -157,3 +157,32 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   }
   return false;
 });
+
+// Always open big centered window when clicking the extension icon
+chrome.action.onClicked.addListener(async (tab) => {
+  try {
+    const width = 1100;
+    const height = 820;
+    let left = undefined;
+    let top = undefined;
+    try {
+      if (tab && tab.windowId != null) {
+        const win = await chrome.windows.get(tab.windowId);
+        if (win && typeof win.left === 'number' && typeof win.top === 'number' && typeof win.width === 'number' && typeof win.height === 'number') {
+          left = Math.max(0, Math.floor((win.left || 0) + ((win.width || width) - width) / 2));
+          top = Math.max(0, Math.floor((win.top || 0) + ((win.height || height) - height) / 2));
+        }
+      }
+    } catch (_) {}
+    await chrome.windows.create({
+      url: chrome.runtime.getURL('modal.html') + (tab && tab.id ? `?tabId=${tab.id}` : ''),
+      type: 'popup',
+      width,
+      height,
+      left,
+      top
+    });
+  } catch (e) {
+    console.warn('Failed to open big window', e);
+  }
+});

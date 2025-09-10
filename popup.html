@@ -37,7 +37,7 @@
       .counter { color: var(--muted); font-size: 12px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 999px; }
       .status { margin-top: 10px; font-size: 12px; }
 
-      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; max-height: 520px; overflow: auto; border: 1px solid var(--border); padding: 12px; border-radius: 10px; background: var(--panel); }
+      .grid { position: relative; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; max-height: 520px; overflow: auto; border: 1px solid var(--border); padding: 12px; border-radius: 10px; background: var(--panel); }
       .item { position: relative; border: 2px solid var(--border); border-radius: 10px; background: #fff; cursor: pointer; user-select: none; transition: box-shadow .12s ease, border-color .12s ease, transform .04s ease; }
       .item:hover { transform: translateY(-1px); }
       .item img { width: 100%; height: 120px; object-fit: cover; display: block; border-radius: 8px; }
@@ -45,6 +45,8 @@
       .item .mark { position: absolute; top: 8px; left: 8px; background: var(--primary); color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 999px; display: none; }
       .item.selected .mark { display: inline-block; }
       .badge { position: absolute; right: 8px; bottom: 8px; background: rgba(0,0,0,0.6); color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 999px; }
+
+      .marquee { position: absolute; border: 2px dashed var(--primary); background: rgba(37,99,235,0.08); pointer-events: none; display: none; z-index: 3; }
 
       @media (max-width: 700px) {
         html, body { min-width: 360px; }
@@ -90,6 +92,7 @@
       <div class="muted">프리셋은 확장 저장소에 보관됩니다. 실제 폴더 생성/삭제는 다운로드 시 발생합니다.</div>
     </div>
     <div class="row actions">
+      <button id="openBigBtn" class="btn btn-ghost">큰 창으로 열기</button>
       <button id="retryBtn" class="btn btn-ghost">다시 시도</button>
       <button id="downloadSelectedBtn" class="btn btn-primary" disabled>선택한 이미지 다운로드</button>
     </div>
@@ -99,7 +102,9 @@
       <button id="invertSelectBtn" class="btn btn-ghost" disabled>선택 반전</button>
       <span id="counts" class="counter"></span>
     </div>
-    <div id="grid" class="grid" aria-live="polite"></div>
+    <div id="grid" class="grid" aria-live="polite">
+      <div id="marquee" class="marquee" aria-hidden="true"></div>
+    </div>
     <div id="status" class="status" aria-live="polite"></div>
     </main>
     <script src="popup.js"></script>
