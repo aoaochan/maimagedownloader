@@ -15,7 +15,7 @@
         --primary-600: #1d4ed8;
         --primary-100a: rgba(37,99,235,0.12);
       }
-      html, body { min-width: 760px; background: var(--bg); color: var(--text); }
+      html, body { min-width: 640px; background: var(--bg); color: var(--text); }
       body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; }
       header { position: sticky; top: 0; z-index: 2; background: var(--bg); border-bottom: 1px solid var(--border); padding: 12px 16px; }
       h1 { font-size: 16px; margin: 0; }
@@ -46,7 +46,7 @@
       .item.selected .mark { display: inline-block; }
       .badge { position: absolute; right: 8px; bottom: 8px; background: rgba(0,0,0,0.6); color: #fff; font-size: 11px; padding: 2px 6px; border-radius: 999px; }
 
-      @media (max-width: 760px) {
+      @media (max-width: 700px) {
         html, body { min-width: 360px; }
         .grid { max-height: 420px; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
         .item img { height: 95px; }
@@ -90,15 +90,17 @@
       <div class="muted">프리셋은 확장 저장소에 보관됩니다. 실제 폴더 생성/삭제는 다운로드 시 발생합니다.</div>
     </div>
     <div class="row actions">
+      <button id="retryBtn" class="btn btn-ghost">다시 시도</button>
       <button id="downloadSelectedBtn" class="btn btn-primary" disabled>선택한 이미지 다운로드</button>
     </div>
     <div class="row actions">
       <button id="selectAllBtn" class="btn btn-ghost" disabled>전체 선택</button>
       <button id="selectNoneBtn" class="btn btn-ghost" disabled>전체 해제</button>
+      <button id="invertSelectBtn" class="btn btn-ghost" disabled>선택 반전</button>
       <span id="counts" class="counter"></span>
     </div>
     <div id="grid" class="grid" aria-live="polite"></div>
-    <div id="status" class="status"></div>
+    <div id="status" class="status" aria-live="polite"></div>
     </main>
     <script src="popup.js"></script>
   </body>

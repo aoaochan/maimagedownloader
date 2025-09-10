@@ -20,9 +20,11 @@ function uuidv4() {
 
 document.addEventListener('DOMContentLoaded', () => {
   const baseInput = document.getElementById('basename');
+  const retryBtn = document.getElementById('retryBtn');
   const downloadBtn = document.getElementById('downloadSelectedBtn');
   const selectAllBtn = document.getElementById('selectAllBtn');
   const selectNoneBtn = document.getElementById('selectNoneBtn');
+  const invertSelectBtn = document.getElementById('invertSelectBtn');
   const counts = document.getElementById('counts');
   const grid = document.getElementById('grid');
   const saveDirect = document.getElementById('saveDirect');
@@ -164,7 +166,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const url = collected[i];
       const item = document.createElement('div');
       item.className = 'item';
+      item.setAttribute('role', 'button');
+      item.setAttribute('tabindex', '0');
       if (selected.has(i)) item.classList.add('selected');
+      item.setAttribute('aria-pressed', selected.has(i) ? 'true' : 'false');
       item.addEventListener('click', () => {
         if (selected.has(i)) {
           selected.delete(i);
@@ -173,12 +178,20 @@ document.addEventListener('DOMContentLoaded', () => {
           selected.add(i);
           item.classList.add('selected');
         }
+        item.setAttribute('aria-pressed', selected.has(i) ? 'true' : 'false');
         updateCounts();
+      });
+      item.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          item.click();
+        }
       });
 
       const img = document.createElement('img');
       img.src = url;
       img.alt = `image-${i+1}`;
+      img.loading = 'lazy';
 
       const mark = document.createElement('span');
       mark.className = 'mark';
@@ -204,6 +217,15 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     try {
+      // Ensure content script is injected (dynamic injection for privacy/perf)
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id, allFrames: true },
+          files: ['content.js']
+        });
+      } catch (injErr) {
+        // ignore if already injected or if blocked on special pages
+      }
       const res = await chrome.tabs.sendMessage(tab.id, {
         type: 'COLLECT_IMAGES',
         payload: { includeBackground: true }
@@ -216,6 +238,7 @@ document.addEventListener('DOMContentLoaded', () => {
       downloadBtn.disabled = true; // until some selected
       selectAllBtn.disabled = !hasAny;
       selectNoneBtn.disabled = !hasAny;
+      invertSelectBtn.disabled = !hasAny;
       if (!hasAny) {
         setStatus('표시할 이미지를 찾지 못했습니다.');
       } else {
@@ -235,6 +258,14 @@ document.addEventListener('DOMContentLoaded', () => {
     selected = new Set();
     renderGrid();
   });
+  invertSelectBtn.addEventListener('click', () => {
+    const next = new Set();
+    for (let i = 0; i < collected.length; i += 1) {
+      if (!selected.has(i)) next.add(i);
+    }
+    selected = next;
+    renderGrid();
+  });
 
   downloadBtn.addEventListener('click', async () => {
     if (!selected.size) {
@@ -242,7 +273,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
     const baseName = (baseInput.value || '파일').trim();
-    const subfolder = saveInFolder.checked ? (folderName.value || baseName).trim() : '';
+    const subfolder = saveInFolder.checked ? sanitizeFolderName(folderName.value || '') : '';
     const urls = collected.filter((_, idx) => selected.has(idx));
     setStatus(`선택한 ${urls.length}개 다운로드 시작...`);
     try {
@@ -258,8 +289,12 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {
       setStatus('백그라운드 통신 오류');
     }
+    if (saveInFolder.checked && !subfolder) {
+      setStatus('폴더명이 비어 있어 루트(다운로드) 폴더에 저장합니다.');
+    }
   });
 
   // Auto-load on open
   autoLoadImages();
+  retryBtn.addEventListener('click', autoLoadImages);
 });

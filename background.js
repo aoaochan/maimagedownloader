@@ -55,25 +55,58 @@ function sanitizeFolderName(name) {
   return safe;
 }
 
+// Helper: query current state of a download id
+function queryDownloadState(id) {
+  return new Promise((resolve) => {
+    try {
+      chrome.downloads.search({ id }, (results) => {
+        if (chrome.runtime.lastError) return resolve(undefined);
+        const item = results && results[0];
+        resolve(item && item.state);
+      });
+    } catch (_) {
+      resolve(undefined);
+    }
+  });
+}
+
+// Wait for a download to finish with race protection and timeout
+function waitForDownload(id, timeoutMs = 60000) {
+  return new Promise(async (resolve) => {
+    // Initial quick check in case it already finished
+    const initial = await queryDownloadState(id);
+    if (initial === "complete" || initial === "interrupted") {
+      return resolve(initial);
+    }
+
+    let settled = false;
+    const listener = async (delta) => {
+      if (delta.id !== id || !delta.state) return;
+      const s = delta.state.current;
+      if (s === "complete" || s === "interrupted") {
+        if (!settled) {
+          settled = true;
+          try { chrome.downloads.onChanged.removeListener(listener); } catch (_) {}
+          try { clearTimeout(timer); } catch (_) {}
+          resolve(s);
+        }
+      }
+    };
+    chrome.downloads.onChanged.addListener(listener);
+
+    const timer = setTimeout(async () => {
+      if (settled) return;
+      const now = await queryDownloadState(id);
+      settled = true;
+      try { chrome.downloads.onChanged.removeListener(listener); } catch (_) {}
+      resolve(now || "timeout");
+    }, timeoutMs);
+  });
+}
+
 async function downloadSequential(urls, baseName = "파일", subfolder = "") {
   const safeBase = sanitizeBaseName(baseName);
   const safeFolder = sanitizeFolderName(subfolder);
-
-  // Helper to wait for a download to finish or fail
-  function waitForDownload(id) {
-    return new Promise((resolve) => {
-      const listener = (delta) => {
-        if (delta.id === id && delta.state && delta.state.current) {
-          const s = delta.state.current;
-          if (s === "complete" || s === "interrupted") {
-            chrome.downloads.onChanged.removeListener(listener);
-            resolve(s);
-          }
-        }
-      };
-      chrome.downloads.onChanged.addListener(listener);
-    });
-  }
 
   for (let i = 0; i < urls.length; i += 1) {
     const url = urls[i];
@@ -99,7 +132,10 @@ async function downloadSequential(urls, baseName = "파일", subfolder = "") {
           }
         );
       });
-      await waitForDownload(id);
+      const state = await waitForDownload(id);
+      if (state === "timeout") {
+        console.warn("Download timeout for", url);
+      }
     } catch (err) {
       // Continue with next download on error
       console.warn("Download failed for", url, err);
